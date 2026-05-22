@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="manifest.js"></script>
+<script src="llm.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f5f2eb; color: #1c1c1c; min-height: 100vh; }
+  header { background: #1a3a2a; color: white; padding: 24px 36px; display: flex; align-items: center; gap: 16px; }
+  .header-icon { font-size: 28px; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 1.6rem; font-weight: 400; }
+  header p { font-size: 0.8rem; color: #b7e4c7; margin-top: 3px; }
+  main { max-width: 960px; margin: 40px auto; padding: 0 24px; }
+  .section-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; font-weight: 400; color: #2d6a4f; margin-bottom: 20px; }
+  .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .llm-card { background: #fdfcf8; border: 1px solid #ddd8cc; border-radius: 14px; padding: 20px 24px; margin-bottom: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .llm-card-title { font-family: 'DM Serif Display', serif; font-size: 1rem; font-weight: 400; color: #1a3a2a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .llm-body { font-size: 0.8rem; line-height: 1.6; color: #1c1c1c; column-count: 2; column-gap: 32px; }
+  .llm-body h2 { font-family: 'DM Serif Display', serif; font-size: 0.88rem; font-weight: 400; color: #1a3a2a; margin: 10px 0 5px 0; padding-bottom: 3px; border-bottom: 1px solid #ddd8cc; break-after: avoid; }
+  .llm-body h2:first-child { margin-top: 0; }
+  .llm-body ul { padding-left: 14px; margin: 3px 0 6px 0; }
+  .llm-body li { margin-bottom: 4px; }
+  .llm-body strong { color: #2d6a4f; font-weight: 600; }
+  .llm-body p { margin-bottom: 5px; }
+  @media (max-width: 700px) { .llm-body { column-count: 1; } }
+  .report-card { background: #fdfcf8; border: 1px solid #ddd8cc; border-radius: 14px; padding: 20px 22px; text-decoration: none; color: inherit; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: box-shadow 0.2s, transform 0.2s; animation: fadeUp 0.3s ease both; }
+  .report-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
+  .rc-id { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: #9e9488; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .rc-arrow { color: #2d6a4f; font-size: 1.1rem; }
+  .rc-name { font-family: 'DM Serif Display', serif; font-size: 1.15rem; margin-bottom: 10px; }
+  .rc-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .rc-pill { font-size: 0.68rem; font-weight: 500; padding: 3px 8px; border-radius: 20px; background: #eae7df; color: #6b6458; white-space: nowrap; }
+  .rc-pill.green { background: #d8f3dc; color: #2d6a4f; }
+  .rc-pill.amber { background: #fff3cd; color: #c08b2a; }
+  .rc-pill.red   { background: #ffe0dc; color: #c0392b; }
+  .rc-meta { font-size: 0.75rem; color: #9e9488; border-top: 1px solid #e8e4dc; padding-top: 10px; margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .error-state { padding: 40px; text-align: center; color: #c0392b; font-size: 0.85rem; background: #fff5f5; border-radius: 12px; border: 1px solid #ffccc7; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-icon">🌾</div>
+  <div>
+    <h1>Field Reports</h1>
+    <p>Select a field to view the full report</p>
+  </div>
+</header>
+<main>
+  <div id="llmSection"></div>
+  <div class="section-title">Available Fields</div>
+  <div class="report-grid" id="grid"></div>
+</main>
+
+<script>
+function fmt1(v) { return Number(v).toFixed(1); }
+function fmtDate(s) { return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function trendLabel(t) {
+  const map = {'no_change':['No change',''],'major_growth':['Major growth','green'],'minor_growth':['Growth','green'],'major_decline':['Major decline','red'],'minor_decline':['Decline','red']};
+  const [label,cls] = map[t]||[t,''];
+  return `<span class="rc-pill ${cls}">${label}</span>`;
+}
+function dominantLabel(cat) { return cat.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+function spiClass(v) { return v>0.5?'green':v<-0.5?'red':'amber'; }
+
+function buildCard(folder, data) {
+  const m = data.metadata;
+  const gc = data.growth_change_analysis;
+  const vd = data.vegetation_description;
+  const spi1 = data.weather.standardized_precipitation_index['1_month'];
+  const gdd = data.weather.accumulated_growing_degree_days_since_seeding;
+  const gddDiff = gdd.current - gdd.historical_average;
+  const stages = ['seeding','crop_emergence','beginning_of_stem_elongation','beginning_of_heading','beginning_of_ripenes','harvest'];
+  const stageLabels = {seeding:'Seeding',crop_emergence:'Emergence',beginning_of_stem_elongation:'Stem Elongation',beginning_of_heading:'Heading',beginning_of_ripenes:'Ripeness',harvest:'Harvest'};
+  let currentStage = 'Seeding';
+  for (const s of stages) { if (data.crop_growth_stages[s]?.day_since > 0) currentStage = stageLabels[s]; }
+  return `
+  <a class="report-card" href="reports/${folder}/index.html">
+    <div class="rc-id"><span>${data.annotation_id}</span><span class="rc-arrow">→</span></div>
+    <div class="rc-name">${m.location.subregion?.trim()}</div>
+    <div class="rc-pills">
+      ${trendLabel(gc['growth trend'])}
+      <span class="rc-pill">📍 ${m.location.region?.trim()}</span>
+      <span class="rc-pill">${fmt1(m.field_area_ha)} ha</span>
+      <span class="rc-pill">🌱 ${currentStage}</span>
+      <span class="rc-pill ${spiClass(spi1)}">SPI ${spi1>0?'+':''}${Number(spi1).toFixed(2)}</span>
+      <span class="rc-pill ${gddDiff>=0?'green':'red'}">GDD ${gddDiff>=0?'+':''}${fmt1(gddDiff)}</span>
+    </div>
+    <div class="rc-meta">
+      <span>🛰️ ${dominantLabel(vd.dominant_category)}</span>
+      <span>📅 ${fmtDate(gc.metadata.latest_image_date)}</span>
+      <span>${m.soil.WRB_soil_groups}</span>
+    </div>
+  </a>`;
+}
+
+// Load each field's data.js by injecting a <script> tag,
+// read window.FIELD_DATA after it loads, build the card.
+function loadFieldScript(folder) {
+  return new Promise((resolve, reject) => {
+    // Clear any previous FIELD_DATA
+    window.FIELD_DATA = undefined;
+    const script = document.createElement('script');
+    script.src = `reports/${folder}/data.js`;
+    script.onload = () => resolve({ folder, data: window.FIELD_DATA });
+    script.onerror = () => reject(new Error(`Could not load reports/${folder}/data.js`));
+    document.head.appendChild(script);
+  });
+}
+
+function inlineMarkdown(text) {
+  return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+function markdownToHtml(md) {
+  if (!md) return '';
+  const lines = md.split('\n');
+  let html = '', inList = false;
+  for (let line of lines) {
+    if (line.startsWith('## ') || line.startsWith('### ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h2>${inlineMarkdown(line.replace(/^#{2,3}\s/, '').trim())}</h2>`;
+    } else if (line.match(/^\s*[-*]\s/)) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${inlineMarkdown(line.replace(/^\s*[-*]\s/, '').trim())}</li>`;
+    } else if (line.trim() === '') {
+      if (inList) { html += '</ul>'; inList = false; }
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<p>${inlineMarkdown(line.trim())}</p>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function renderRootLLM() {
+  const md = window.LLM_SUMMARY;
+  if (!md) return;
+  document.getElementById('llmSection').innerHTML = `
+    <div class="llm-card">
+      <div class="llm-card-title">🤖 LLM Summary</div>
+      <div class="llm-body">${markdownToHtml(md)}</div>
+    </div>`;
+}
+
+async function init() {
+  renderRootLLM();
+  const grid = document.getElementById('grid');
+
+  if (!window.FIELD_MANIFEST || window.FIELD_MANIFEST.length === 0) {
+    grid.innerHTML = '<div class="error-state"><b>manifest.js not loaded</b><br><small>Make sure manifest.js is in the same folder as this index.html</small></div>';
+    return;
+  }
+
+  // Load all field scripts sequentially (parallel would overwrite window.FIELD_DATA)
+  const cards = [];
+  for (const folder of window.FIELD_MANIFEST) {
+    try {
+      const { data } = await loadFieldScript(folder);
+      if (data) cards.push(buildCard(folder, data));
+      else cards.push(`<div class="error-state"><b>${folder}</b><br><small>data.js loaded but window.FIELD_DATA was empty</small></div>`);
+    } catch(err) {
+      cards.push(`<div class="error-state"><b>${folder}</b><br><small>${err.message}</small></div>`);
+    }
+  }
+  grid.innerHTML = cards.join('');
+}
+
+init();
+</script>
+</body>
+</html>

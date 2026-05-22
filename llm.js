@@ -1,0 +1,24 @@
+// LLM Summary — edit the text below to update the summary shown on all field reports.
+// To update: edit the markdown text between the backticks and save.
+window.LLM_SUMMARY = `
+## FINAL_SUMMARY
+- **Crop Stage**: All fields in **stem elongation (BBCH 30–32)**—critical for nitrogen, PGRs, and weed/disease control.
+- **Weather**: Dry now, but **heavy rain forecasted April 22–25** risks leaching and compaction. **Complete operations by April 18**.
+- **Growth Trend**: Most fields show **vigorous but uneven growth**, with **20–30% underperforming** (drought stress) and **8–25% overperforming** (lodging risk).
+- **Deviating Fields**:
+  - **LAL250415**: Strong recovery; scout northern edges for weeds.
+  - **LAA250415**: Soils saturated; delay nitrogen until late April; scout **3.5-ha low-productivity zone**.
+  - **LAI250415**: Delay nitrogen unless light rain; apply herbicide/PGR/fungicide by **April 14**.
+  - **LAF250415**: Prioritize **fungicide now**; delay nitrogen to April 28.
+  - **MAR250415**: Missed optimal window; only **insecticide viable on April 16**; scout central/northern hotspots.
+- **Action for Majority**:
+  - Apply **second nitrogen, PGRs, herbicides, and fungicides by April 18** (before rain).
+  - **Variable rates**: Reduce nitrogen/PGRs in underperforming zones; increase in high-growth zones.
+- **Action for Deviating Fields**:
+  - **LAA250415**: Wait for soils to dry; scout low-productivity zone.
+  - **LAI250415/LAF250415**: Adjust nitrogen timing; apply other inputs now.
+  - **MAR250415**: Scout hotspots; apply insecticide if needed.
+- **Scouting Priority**: **Underperforming zones** (e.g., MAR250415, LAA250415) and **hotspots** (e.g., LAL250415's northern edges, LAJ250415's northeastern/central areas).
+- **Key Risk**: **Uneven growth may lead to permanent yield gaps** if stress/weeds are not addressed. **Lodging risk** in high-growth zones.
+- **Disclaimer**: Satellite data is **current as of April 15** but may not reflect recent changes (e.g., weeds). **Scout before adjusting rates**.
+`;
