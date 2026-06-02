@@ -1,5 +1,0 @@
-window.FIELD_MANIFEST = [
-  "LAA241015",
-  "LAC241015",
-  "MAP250415"
-];

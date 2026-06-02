@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Report</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="../../manifest.js"></script>
+<script src="llm.js"></script>
+<style>
+  :root {
+    --green-dark: #1a3a2a;
+    --green-mid: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #b7e4c7;
+    --amber: #e9c46a;
+    --amber-dark: #c08b2a;
+    --red: #c0392b;
+    --red-light: #f4a261;
+    --soil: #8b6914;
+    --soil-light: #c9a84c;
+    --bg: #f5f2eb;
+    --bg-card: #fdfcf8;
+    --border: #ddd8cc;
+    --text: #1c1c1c;
+    --text-muted: #6b6458;
+    --text-light: #9e9488;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--green-dark);
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header-icon {
+    width: 44px; height: 44px;
+    background: var(--green-light);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .header-meta {
+    font-size: 0.78rem;
+    color: var(--green-pale);
+    margin-top: 2px;
+    font-family: 'DM Mono', monospace;
+  }
+  .header-right {
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .header-stat {
+    text-align: right;
+  }
+  .header-stat .val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem;
+    color: white;
+  }
+  .header-stat .lbl {
+    font-size: 0.7rem;
+    color: var(--green-pale);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .col-left { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── LLM SUMMARY BANNER ── */
+  /* ── LLM SUMMARY CARD ── */
+  .llm-card {
+    background: #eef6f0;
+    border: 1px solid #b7e4c7;
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .llm-summary-body {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .llm-summary-body h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--green-dark);
+    margin: 12px 0 5px 0;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #b7e4c7;
+  }
+  .llm-summary-body h2:first-child { margin-top: 0; }
+  .llm-summary-body ul {
+    padding-left: 16px;
+    margin: 3px 0 6px 0;
+  }
+  .llm-summary-body li { margin-bottom: 4px; }
+  .llm-summary-body strong { color: var(--green-dark); font-weight: 600; }
+  .llm-summary-body p { margin-bottom: 5px; }
+  .llm-summary-empty {
+    font-size: 0.78rem;
+    color: var(--text-light);
+    font-style: italic;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: var(--green-dark);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon { font-size: 1rem; }
+
+  /* ── GROWTH STAGE TIMELINE ── */
+  .timeline-wrap {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .timeline {
+    display: flex;
+    align-items: flex-start;
+    min-width: 520px;
+    position: relative;
+    padding-top: 8px;
+  }
+  .timeline::before {
+    display: none; /* replaced by explicit connector bars */
+  }
+  .tl-connector {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 9px; /* align vertically with dot centres */
+    position: relative;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .tl-connector-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+  .tl-connector.done .tl-connector-fill {
+    width: 100%;
+    background: var(--green-mid);
+  }
+  .tl-connector.active .tl-connector-fill {
+    background: var(--green-mid);
+  }
+  .tl-connector.future .tl-connector-fill {
+    width: 0%;
+  }
+  .tl-item {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    width: 60px;
+  }
+  .tl-dot {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    margin-bottom: 8px;
+    transition: all 0.3s;
+  }
+  .tl-item.past .tl-dot {
+    background: var(--green-mid);
+    border-color: var(--green-mid);
+    color: white;
+  }
+  .tl-item.current .tl-dot {
+    background: var(--amber);
+    border-color: var(--amber-dark);
+    color: var(--green-dark);
+    box-shadow: 0 0 0 4px rgba(233,196,106,0.3);
+    font-size: 12px;
+  }
+  .tl-item.future .tl-dot {
+    background: var(--bg);
+    border-color: var(--border);
+    color: var(--text-light);
+  }
+  .tl-label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.3;
+    max-width: 72px;
+  }
+  .tl-item.current .tl-label { color: var(--amber-dark); font-weight: 600; }
+  .tl-date {
+    font-size: 0.6rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-light);
+    text-align: center;
+    margin-top: 3px;
+  }
+
+  /* ── STATUS CARDS ── */
+  .status-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .status-card {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+  }
+  .status-card .s-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-light);
+    margin-bottom: 6px;
+  }
+  .status-card .s-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--text);
+  }
+  .status-card .s-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-neutral { background: #e8e4dc; color: var(--text-muted); }
+  .badge-good { background: #d8f3dc; color: var(--green-mid); }
+  .badge-warn { background: #fff3cd; color: var(--amber-dark); }
+  .badge-bad { background: #ffe0dc; color: var(--red); }
+
+  /* ── CHART CONTAINERS ── */
+  .chart-container { position: relative; }
+  .chart-sm { height: 180px; }
+  .chart-md { height: 220px; }
+
+  /* ── ZONE TABLE ── */
+  .zone-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .zone-table th {
+    text-align: left;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-light);
+    padding: 0 8px 8px 8px;
+    font-weight: 500;
+  }
+  .zone-table td {
+    padding: 7px 8px;
+    border-top: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .zone-table tr:last-child td { border-bottom: none; }
+  .zone-bar-wrap {
+    background: var(--bg);
+    border-radius: 4px;
+    height: 8px;
+    width: 100%;
+    overflow: hidden;
+  }
+  .zone-bar { height: 100%; border-radius: 4px; }
+
+  /* ── WEATHER CARDS ── */
+  .weather-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .w-metric {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+  }
+  .w-metric .wm-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-light);
+    margin-bottom: 5px;
+  }
+  .w-metric .wm-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .w-metric .wm-hist {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .w-metric .wm-diff {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-top: 3px;
+  }
+  .diff-pos { color: var(--green-mid); }
+  .diff-neg { color: var(--red); }
+
+  /* ── FORECAST TABLE ── */
+  .forecast-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .forecast-table th {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-light);
+    padding: 0 6px 6px 6px;
+    font-weight: 500;
+    text-align: center;
+  }
+  .forecast-table th:first-child { text-align: left; }
+  .forecast-table td {
+    padding: 6px 6px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+  }
+  .forecast-table td:first-child {
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+  }
+  .precip-bar {
+    display: inline-block;
+    height: 10px;
+    background: #4a90c4;
+    border-radius: 2px;
+    min-width: 2px;
+    vertical-align: middle;
+    margin-left: 3px;
+    opacity: 0.7;
+  }
+
+  /* ── OPERATIONS CALENDAR ── */
+  .ops-grid {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .ops-day {
+    border-radius: 6px;
+    padding: 5px 2px;
+    text-align: center;
+    cursor: default;
+    border: 1px solid transparent;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .ops-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 2;
+  }
+  .ops-day .od-date { display: none; }
+  .ops-day .od-idx {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+  }
+  .ops-good { background: #d8f3dc; border-color: #b7e4c7; }
+  .ops-good .od-idx { color: var(--green-mid); }
+  .ops-med { background: #fff3cd; border-color: #ffe49c; }
+  .ops-med .od-idx { color: var(--amber-dark); }
+  .ops-bad { background: #ffe0dc; border-color: #ffbfb8; }
+  .ops-bad .od-idx { color: var(--red); }
+  .ops-na { background: var(--bg); border-color: var(--border); opacity: 0.5; cursor: default; }
+  .ops-na .od-idx { color: var(--text-light); }
+
+  .ops-table {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 5px 0;
+    align-items: center;
+  }
+  .ops-op-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    text-align: right;
+    padding-right: 8px;
+    align-self: center;
+  }
+  .ops-table-wrap {
+    min-width: 0;
+  }
+  .ops-op-row {
+    display: contents;
+  }
+  .ops-weather-row {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 4px;
+    margin-bottom: 2px;
+  }
+  .ops-weather-cell {
+    text-align: center;
+    padding: 3px 1px;
+    font-size: 0.6rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    line-height: 1.35;
+    border-radius: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    cursor: default;
+  }
+  .ops-weather-cell .wc-date {
+    font-size: 0.58rem;
+    color: var(--text-light);
+    white-space: nowrap;
+    overflow: hidden;
+    margin-bottom: 2px;
+  }
+  .ops-weather-cell .wc-icon { font-size: 0.75rem; line-height: 1; }
+  .ops-weather-cell .wc-val { font-size: 0.6rem; }
+
+  /* ── SOIL SECTION ── */
+  .soil-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .soil-item { font-size: 0.82rem; }
+  .soil-item .si-label { color: var(--text-light); font-size: 0.72rem; margin-bottom: 3px; }
+  .soil-item .si-val { font-family: 'DM Mono', monospace; font-weight: 500; }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--text-muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── TOOLTIP ── */
+  .tooltip-box {
+    position: absolute;
+    background: var(--green-dark);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    pointer-events: none;
+    display: none;
+    z-index: 100;
+    white-space: nowrap;
+    line-height: 1.6;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 800px) {
+    .main { padding: 16px 12px; }
+    .status-row { grid-template-columns: 1fr 1fr; }
+    .vc-summary-row { grid-template-columns: 1fr 1fr; }
+    .weather-metrics { grid-template-columns: 1fr 1fr; }
+    .soil-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 500px) {
+    .header { padding: 16px; }
+    .status-row { grid-template-columns: 1fr; }
+    .weather-metrics { grid-template-columns: 1fr; }
+  }
+
+  /* ── ANIMATIONS ── */
+  .card { animation: fadeUp 0.4s ease both; }
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .card:nth-child(4) { animation-delay: 0.2s; }
+  .card:nth-child(5) { animation-delay: 0.25s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 14px 0;
+  }
+
+  .section-sub {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-light);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .full-width { grid-column: 1 / -1; }
+
+  details summary {
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 6px 0;
+    user-select: none;
+  }
+  details summary:hover { color: var(--green-mid); }
+
+  /* ── FIELD MAP (Leaflet) ── */
+  .field-leaflet-wrap {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    height: 360px;
+  }
+  .dual-map-row .field-leaflet-wrap {
+    height: 260px;
+  }
+  .top-map-row .field-leaflet-wrap {
+    height: 320px;
+  }
+  .field-leaflet-wrap .leaflet-container {
+    height: 100%;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── VEGETATION CHANGE SECTION ── */
+  .vc-summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .vc-hotspot-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) {
+    .vc-summary-row { grid-template-columns: 1fr 1fr; }
+    .vc-hotspot-row { flex-direction: column; }
+  }
+
+  /* ── DUAL MAP ROW ── */
+  .dual-map-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .dual-map-item {}
+
+  /* ── FIELD MAP IMAGE ── */
+  .field-map-wrap {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .field-map-img {
+    max-width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+
+  /* ── FIELD SWITCHER ── */
+  .field-nav {
+    background: #122b1e;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    overflow-x: auto;
+  }
+  .field-nav-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--green-pale);
+    opacity: 0.6;
+    margin-right: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .field-btn {
+    background: none;
+    border: none;
+    color: var(--green-pale);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    opacity: 0.65;
+    transition: opacity 0.2s, border-color 0.2s, color 0.2s;
+    flex-shrink: 0;
+  }
+  .field-btn:hover { opacity: 1; }
+  .field-btn.active {
+    opacity: 1;
+    color: white;
+    border-bottom-color: var(--amber);
+  }
+  .field-btn .fb-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-left: 5px;
+  }
+
+  /* ── BACK LINK ── */
+  .back-link {
+    display: inline-block;
+    padding: 6px 0 6px 32px;
+    font-size: 0.78rem;
+    color: var(--green-pale);
+    text-decoration: none;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+    background: #122b1e;
+    width: 100%;
+  }
+  .back-link:hover { opacity: 1; }
+
+
+  /* ── BACK LINK ── */
+  .back-link {
+    display: block;
+    padding: 6px 32px;
+    font-size: 0.78rem;
+    color: var(--green-pale);
+    text-decoration: none;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+    background: #122b1e;
+  }
+  .back-link:hover { opacity: 1; }
+
+</style>
+
+</head>
+<body>
+
+<!-- Field data: loaded from data.js in this folder.
+     To create data.js from data.json, open data.json and:
+       1. Add  window.FIELD_DATA =  at the very top (before the opening brace)
+       2. Add  ;  at the very bottom (after the closing brace)
+       3. Save as data.js -->
+<script src="data.js"></script>
+
+<div id="app"></div>
+<div class="tooltip-box" id="tooltip"></div>
+
+<script>
+// ── Helpers ──────────────────────────────────
+const fmt1 = v => v.toFixed(1);
+const fmt2 = v => v.toFixed(2);
+const fmtDate = s => { const d = new Date(s); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); };
+const fmtDateShort = s => { const d = new Date(s); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}); };
+
+const zoneColors = ['#E11E2D','#FFA528','#F1FFBA','#37E13C','#239B28'];
+const changeColors = {
+  significantly_lower: '#E11E2D',
+  slightly_lower:      '#FFA528',
+  similar:             '#F1FFBA',
+  slightly_higher:     '#37E13C',
+  significantly_higher:'#239B28'
+};
+
+function badge(text, cls) {
+  return `<span class="badge badge-${cls}">${text}</span>`;
+}
+
+function trendBadge(trend) {
+  if(trend === 'no_change') return badge('No change','neutral');
+  if(trend.includes('growth')) return badge('Growing','good');
+  if(trend.includes('decline')) return badge('Declining','bad');
+  return badge(trend,'neutral');
+}
+
+// ── FIELD SWITCHER NAV ────────────────────────
+// renderFieldNav removed — single-field mode
+
+// ── 1. HEADER ─────────────────────────────────
+function renderHeader(DATA) {
+  const m = DATA.metadata;
+  const loc = [m.location.subregion.trim(), m.location.region.trim(), m.location.country.trim()].filter(Boolean).join(', ');
+  const reportDate = fmtDate(DATA.growth_change_analysis.metadata.latest_image_date);
+  const s = m.soil;
+  return `
+  <header class="header">
+    <div class="header-left">
+      <div class="header-icon">🌾</div>
+      <div>
+        <h1>Field Report &nbsp;<span style="font-size:1.35rem;opacity:1;font-family:'DM Serif Display',serif;color:var(--amber)">${reportDate}</span></h1>
+        <div class="header-meta">${DATA.annotation_id} &nbsp;·&nbsp; ${loc}</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-stat">
+        <div class="val">${fmt1(m.field_area_ha)} ha</div>
+        <div class="lbl">Field Area</div>
+      </div>
+      <div class="header-stat">
+        <div class="val">${fmt1(m.terrain.mean_elevation)} m</div>
+        <div class="lbl">Mean Elevation</div>
+      </div>
+      <div class="header-stat">
+        <div class="val">${m.soil.WRB_soil_groups}</div>
+        <div class="lbl">Soil Type</div>
+      </div>
+      <div class="header-stat">
+        <div class="val">${fmt1(s['clay_particles g/100g (%)'])} / ${fmt1(s['sand particles g/100g (%)'])} / ${fmt1(s['silt particles g/100g (%)'])}%</div>
+        <div class="lbl">Clay / Sand / Silt</div>
+      </div>
+    </div>
+  </header>
+  <nav class="field-nav">
+    <a class="field-btn" href="../../index.html" style="opacity:0.5;font-size:0.75rem;letter-spacing:0.03em">← All</a>
+    ${(window.FIELD_MANIFEST || []).map(folder => {
+      const isActive = folder === DATA.annotation_id;
+      return `<a class="field-btn ${isActive ? 'active' : ''}" href="../${folder}/index.html">${folder}</a>`;
+    }).join('')}
+  </nav>`;
+}
+
+// ── 2. GROWTH STAGE TIMELINE ──────────────────
+function renderTimeline(DATA) {
+  const stages = [
+    {key:'seeding', label:'Seeding', icon:'🌱'},
+    {key:'crop_emergence', label:'Emergence', icon:'🌿'},
+    {key:'beginning_of_stem_elongation', label:'Stem Elongation', icon:'🌾'},
+    {key:'beginning_of_heading', label:'Heading', icon:'🌻'},
+    {key:'beginning_of_ripenes', label:'Ripeness', icon:'🟡'},
+    {key:'harvest', label:'Harvest', icon:'🚜'}
+  ];
+  const cgs = DATA.crop_growth_stages;
+  const items = stages.map(s => {
+    const d = cgs[s.key];
+    return {...s, date: d.date, daySince: d.day_since};
+  });
+
+  // Classify each stage
+  let lastPastIdx = -1;
+  items.forEach((it, i) => { if (it.daySince > 0) lastPastIdx = i; });
+  items.forEach((it, i) => {
+    if (i < lastPastIdx)       it.cls = 'past';
+    else if (i === lastPastIdx) it.cls = 'current';
+    else                        it.cls = 'future';
+  });
+
+  // Build HTML: alternate stage dots and connectors
+  const parts = [];
+  items.forEach((it, i) => {
+    parts.push(`
+      <div class="tl-item ${it.cls}">
+        <div class="tl-dot">${it.icon}</div>
+        <div class="tl-label">${it.label}</div>
+        <div class="tl-date">${fmtDateShort(it.date)}</div>
+      </div>`);
+
+    // Add connector after every stage except the last
+    if (i < items.length - 1) {
+      const next = items[i + 1];
+
+      if (it.cls === 'past' && next.cls !== 'future') {
+        // fully filled — between two past stages or past→current
+        parts.push(`<div class="tl-connector done"><div class="tl-connector-fill"></div></div>`);
+
+      } else if (it.cls === 'current') {
+        // partially filled — calculate progress toward next stage
+        // daySince for current is days since that stage started (positive)
+        // daySince for next is negative: how many days until it starts
+        const daysSinceCurrent = it.daySince;           // e.g. 11
+        const daysUntilNext    = Math.abs(next.daySince); // e.g. 93
+        const totalSpan        = daysSinceCurrent + daysUntilNext;
+        const pct = totalSpan > 0 ? Math.round((daysSinceCurrent / totalSpan) * 100) : 0;
+        const tipStart = Math.max(0, pct - 6);
+        const tipEnd   = Math.min(100, pct + 4);
+        const trackBg = `linear-gradient(90deg,
+          var(--green-mid) ${tipStart}%,
+          var(--amber) ${tipEnd}%,
+          var(--border) ${tipEnd}%)`;
+        parts.push(`<div class="tl-connector active" style="background:${trackBg}"><div class="tl-connector-fill" style="width:${pct}%"></div></div>`);
+
+      } else {
+        // empty — future connectors
+        parts.push(`<div class="tl-connector future"><div class="tl-connector-fill"></div></div>`);
+      }
+    }
+  });
+
+  return `
+  <div class="card">
+    <div class="card-title"><span class="icon">📅</span> Crop Growth Stages</div>
+    <div class="timeline-wrap">
+      <div class="timeline">${parts.join('')}</div>
+    </div>
+  </div>`;
+}
+
+// ── 3. VEGETATION STATUS ──────────────────────
+function renderVegetation(DATA) {
+  const vd = DATA.vegetation_description;
+  const gc = DATA.growth_change_analysis;
+  const trend = gc['growth trend'];
+  const eviDiff = gc.median_EVI_change.difference;
+  const meta = gc.metadata;
+  const absChange = gc.absolute_growth_change.categories;
+  const hotspots = gc.absolute_growth_change.hotspot_scouting_points || [];
+
+  // EVI chart data — stored globally for initCharts()
+  const eviDates = Object.keys(DATA.latest_EVI_data);
+  window._chartData = window._chartData || {};
+  window._chartData.eviDates = eviDates.map(d => fmtDate(d));
+  window._chartData.eviMeans = eviDates.map(d => DATA.latest_EVI_data[d].mean);
+  window._chartData.eviMedians = eviDates.map(d => DATA.latest_EVI_data[d].median);
+  window._chartData.eviMins = eviDates.map(d => DATA.latest_EVI_data[d].min);
+  window._chartData.eviMaxs = eviDates.map(d => DATA.latest_EVI_data[d].max);
+
+  // Veg category bar chart data
+  const cats = vd.growth_categories;
+  window._chartData.catLabels = ['Bare Soil','Very Low','Low','Medium','High','Very High'];
+  window._chartData.catVals = [cats.bare_soil.area_ha, cats.very_low_vegetation.area_ha, cats.low_vegetation.area_ha, cats['medium vegetation'].area_ha, cats.high_vegetation.area_ha, cats.very_high_vegetation.area_ha];
+  window._chartData.catColors = ['#c9a84c','#e9c46a','#b7e4c7','#52b788','#2d6a4f','#1a3a2a'];
+
+  // Absolute change bar chart data
+  const changeKeys   = ['major_decline','minor_decline','no_change','minor_growth','major_growth'];
+  const changeLabels = ['Major Decline','Minor Decline','No Change','Minor Growth','Major Growth'];
+  const changeCols   = ['#E11E2D','#FFA528','#F1FFBA','#37E13C','#239B28'];
+  window._chartData.absChangeLabels = changeLabels;
+  window._chartData.absChangeVals   = changeKeys.map(k => absChange[k]?.percentage || 0);
+  window._chartData.absChangeCols   = changeCols;
+
+  // Hotspot table rows
+  const hotspotRows = hotspots.length > 0 ? hotspots.map(h => {
+    const diffCol = h.value_difference < 0 ? 'var(--red)' : 'var(--green-mid)';
+    const catLabel = h.category.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+    return `<tr>
+      <td>#${h.id}</td>
+      <td>${h.location}</td>
+      <td>${catLabel}</td>
+      <td>${fmt1(h.area_ha)} ha</td>
+      <td style="font-family:'DM Mono',monospace">${fmt2(h.new_value)}</td>
+      <td style="font-family:'DM Mono',monospace;color:${diffCol};font-weight:600">${h.value_difference > 0 ? '+' : ''}${fmt2(h.value_difference)}</td>
+    </tr>`;
+  }).join('') : '';
+
+  return `
+  <div class="card">
+    <div class="card-title"><span class="icon">🛰️</span> Vegetation Status &amp; Change</div>
+
+    <!-- 4 summary cards -->
+    <div class="vc-summary-row">
+      <div class="status-card">
+        <div class="s-label">Dominant Cover</div>
+        <div class="s-value" style="font-size:1.05rem">${vd.dominant_category.replace(/_/g,' ')}</div>
+        <div class="s-sub">${fmt1(vd.crop_cover.area_percentage*100)}% crop cover · ${fmt1(vd.crop_cover.area_ha)} ha</div>
+      </div>
+      <div class="status-card">
+        <div class="s-label">Growth Trend</div>
+        <div class="s-value" style="margin-bottom:6px">${trendBadge(trend)}</div>
+        <div class="s-sub">${meta.change_period}-day period</div>
+      </div>
+      <div class="status-card">
+        <div class="s-label">Median EVI Change</div>
+        <div class="s-value" style="font-size:1.05rem;color:${eviDiff < 0 ? 'var(--red)' : 'var(--green-mid)'}">${eviDiff > 0 ? '+' : ''}${fmt2(eviDiff)}</div>
+        <div class="s-sub">${fmt2(gc.median_EVI_change.old_value)} → ${fmt2(gc.median_EVI_change.new_value)}</div>
+      </div>
+      <div class="status-card">
+        <div class="s-label">Change Period</div>
+        <div class="s-value" style="font-size:0.85rem;font-family:'DM Mono',monospace">${fmtDate(meta.reference_image_date)}</div>
+        <div class="s-sub">to ${fmtDate(meta.latest_image_date)}</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="section-sub">Vegetation Category Breakdown</div>
+    <div class="chart-container chart-sm">
+      <canvas id="vegCatChart"></canvas>
+    </div>
+
+    <hr class="divider">
+    <div class="section-sub">EVI Time Series — Median with Min/Max range</div>
+    <div class="chart-container chart-sm">
+      <canvas id="eviChart"></canvas>
+    </div>
+
+    ${(DATA._images && DATA._images.hotspots) || hotspots.length > 0 ? `
+    <hr class="divider">
+    <div class="section-sub">Growth Change</div>
+    <div class="vc-hotspot-row">
+      <div class="field-leaflet-wrap" style="flex:1" id="mapHotspots"></div>
+      ${hotspots.length > 0 ? `
+      <div style="flex:1;overflow-x:auto">
+        <div class="section-sub" style="margin-bottom:8px">Hotspots</div>
+        <table class="zone-table" style="font-size:0.75rem">
+          <thead><tr>
+            <th>#</th><th>Loc.</th><th>Category</th><th>Area</th><th>EVI</th><th>Δ EVI</th>
+          </tr></thead>
+          <tbody>${hotspotRows}</tbody>
+        </table>
+      </div>` : ''}
+    </div>` : ''}
+
+    <hr class="divider">
+    <div class="section-sub">Absolute Growth Change</div>
+    <div class="chart-container" style="height:90px">
+      <canvas id="absChangeChart"></canvas>
+    </div>
+  </div>`;
+}
+
+// ── 4. GROWTH VARIABILITY ─────────────────────
+function renderVariability(DATA) {
+  const gv = DATA.growth_variability;
+  const zones = gv.zone_description;
+  const hist = gv.current_variability_vs_average_historical_variability.yield_deviation.relative_productivity_difference_from_historical_average_categories;
+  const histKeys = ['significantly_lower','slightly_lower','similar','slightly_higher','significantly_higher'];
+  const histLabels = ['Signif. Lower','Slightly Lower','Similar','Slightly Higher','Signif. Higher'];
+  window._chartData = window._chartData || {};
+  window._chartData.histLabels = histLabels;
+  const histPalette = {
+    significantly_lower:  '#2166ac',
+    slightly_lower:       '#74a9cf',
+    similar:              '#cccccc',
+    slightly_higher:      '#f4a44a',
+    significantly_higher: '#d7590b'
+  };
+  window._chartData.histVals   = histKeys.map(k => hist[k].area_percentage);
+  window._chartData.histColors = histKeys.map(k => histPalette[k]);
+  const histVals = window._chartData.histVals;
+  const histColors = window._chartData.histColors;
+
+  const zoneRows = zones.map((z,i) => `
+    <tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${zoneColors[i]};margin-right:6px;"></span>Zone ${z.zone_number}</td>
+      <td>${z.productivity}</td>
+      <td>${fmt1(z.area.ha)} ha</td>
+      <td style="width:90px">
+        <div class="zone-bar-wrap">
+          <div class="zone-bar" style="width:${z.area.percentage}%;background:${zoneColors[i]}"></div>
+        </div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.75rem">${fmt2(z.EVI_statistics.mean)}</td>
+    </tr>`).join('');
+
+  return `
+  <div class="card">
+    <div class="card-title"><span class="icon">📊</span> Growth Variability Zones</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div class="status-card" style="flex:1">
+        <div class="s-label">Variability</div>
+        <div class="s-value" style="text-transform:capitalize">${gv.variability_category}</div>
+        <div class="s-sub">${gv.number_of_zones} zones identified</div>
+      </div>
+    </div>
+    ${(DATA._images && (DATA._images.zones || DATA._images.history)) ? `
+    <div class="dual-map-row">
+      ${DATA._images.zones ? `
+      <div class="dual-map-item">
+        <div class="section-sub">Current Zones</div>
+        <div class="field-leaflet-wrap" id="mapZones"></div>
+      </div>` : ''}
+      ${DATA._images.history ? `
+      <div class="dual-map-item">
+        <div class="section-sub">Historical Average</div>
+        <div class="field-leaflet-wrap" id="mapHistory"></div>
+      </div>` : ''}
+    </div>
+    <hr class="divider">` : ''}
+    <table class="zone-table">
+      <thead><tr>
+        <th>Zone</th><th>Productivity</th><th>Area</th><th>Share</th><th>EVI mean</th>
+      </tr></thead>
+      <tbody>${zoneRows}</tbody>
+    </table>
+  </div>`;
+}
+
+// ── LLM SUMMARY ───────────────────────────────
+function markdownToHtml(md) {
+  if (!md) return '';
+  const lines = md.split('\n');
+  let html = '';
+  let inList = false;
+
+  for (let line of lines) {
+    // H2
+    if (line.startsWith('## ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h2>${line.slice(3).trim()}</h2>`;
+    }
+    // H3
+    else if (line.startsWith('### ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h2>${line.slice(4).trim()}</h2>`;
+    }
+    // List item
+    else if (line.match(/^\s*[-*]\s/)) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      const content = line.replace(/^\s*[-*]\s/, '').trim();
+      html += `<li>${inlineMarkdown(content)}</li>`;
+    }
+    // Empty line
+    else if (line.trim() === '') {
+      if (inList) { html += '</ul>'; inList = false; }
+    }
+    // Paragraph
+    else {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<p>${inlineMarkdown(line.trim())}</p>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function inlineMarkdown(text) {
+  // Bold: **text**
+  return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
+function renderLLMSummary() {
+  const md = window.LLM_SUMMARY || '';
+  if (!md) return '';
+  const body = `<div class="llm-summary-body">${markdownToHtml(md)}</div>`;
+  return `
+  <div class="llm-card">
+    <div class="card-title"><span class="icon">🤖</span> LLM Summary</div>
+    ${body}
+  </div>`;
+}
+
+// ── FIELD MAP ─────────────────────────────────
+function parseWKTPolygon(wkt) {
+  const match = wkt.match(/POLYGON\s*\(\(([^)]+)\)\)/i);
+  if (!match) return null;
+  return match[1].trim().split(',').map(pair => {
+    const [lng, lat] = pair.trim().split(/\s+/).map(Number);
+    return [lat, lng];
+  });
+}
+
+function wktBounds(coords) {
+  // Returns L.latLngBounds-compatible [[minLat, minLng], [maxLat, maxLng]]
+  const lats = coords.map(c => c[0]);
+  const lngs = coords.map(c => c[1]);
+  return [[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]];
+}
+
+// Shared satellite tile layer factory
+function satTileLayer() {
+  return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri',
+    maxZoom: 19
+  });
+}
+
+// Shared polygon overlay factory
+function fieldPolygon(coords) {
+  return L.polygon(coords, {
+    color: '#ffffff', weight: 2.5, opacity: 0.95,
+    fillColor: '#ffffff', fillOpacity: 0.08
+  });
+}
+
+// Create a Leaflet map in containerId, optionally with an image overlay
+// imagePath: relative path to PNG (or null for ortho-only)
+// opacity: overlay opacity (default 0.75)
+function createFieldMap(containerId, coords, imagePath, opacity) {
+  const map = L.map(containerId, { zoomControl: true, scrollWheelZoom: false });
+  satTileLayer().addTo(map);
+
+  if (imagePath) {
+    const bounds = wktBounds(coords);
+    const overlay = L.imageOverlay(imagePath, bounds, { opacity: opacity || 0.80 }).addTo(map);
+    // Nearest-neighbor rendering — prevents blurring of classification maps
+    overlay.on('load', () => {
+      const el = overlay.getElement();
+      if (el) {
+        el.style.imageRendering = 'pixelated';
+        el.style.imageRendering = 'crisp-edges'; // Firefox fallback
+      }
+    });
+  }
+
+  const poly = fieldPolygon(coords);
+  poly.addTo(map);
+  map.fitBounds(poly.getBounds(), { padding: [16, 16] });
+  return map;
+}
+
+function renderFieldMap(DATA) {
+  if (!DATA.polygon_wkt) return '';
+  const hasRgb = DATA._images?.rgb;
+  const hasEvi = DATA._images?.evi;
+  const lastDate = fmtDate(Object.keys(DATA.latest_EVI_data).pop());
+  const eviDate = hasEvi ? lastDate : '';
+  const rgbDate = hasRgb ? lastDate : '';
+
+  if (hasRgb || hasEvi) {
+    return `
+  <div class="card">
+    <div class="dual-map-row top-map-row">
+      <div class="dual-map-item">
+        <div class="card-title" style="margin-bottom:10px"><span class="icon">🛰️</span> ${hasRgb ? `RGB <span style="color:var(--amber-dark);font-size:0.9em">${rgbDate}</span>` : 'Field Map'}</div>
+        <div class="field-leaflet-wrap" id="mapOrtho"></div>
+      </div>
+      ${hasEvi ? `
+      <div class="dual-map-item">
+        <div class="card-title" style="margin-bottom:10px"><span class="icon">🌿</span> EVI <span style="color:var(--amber-dark);font-size:0.9em">${eviDate}</span></div>
+        <div class="field-leaflet-wrap" id="mapEvi"></div>
+      </div>` : ''}
+    </div>
+  </div>`;
+  }
+  return `
+  <div class="card">
+    <div class="card-title"><span class="icon">🗺️</span> Field Map</div>
+    <div class="field-leaflet-wrap" id="mapOrtho"></div>
+  </div>`;
+}
+
+function parseWKTPoint(wkt) {
+  const match = wkt.match(/POINT\s*\(\s*([\d.+-]+)\s+([\d.+-]+)\s*\)/i);
+  if (!match) return null;
+  return [parseFloat(match[2]), parseFloat(match[1])]; // [lat, lng]
+}
+
+function hotspotColor(category) {
+  if (category.includes('major_decline')) return '#E11E2D';
+  if (category.includes('minor_decline')) return '#FFA528';
+  if (category.includes('major_growth'))  return '#239B28';
+  if (category.includes('minor_growth'))  return '#37E13C';
+  return '#aaaaaa';
+}
+
+function initMap(DATA) {
+  if (!DATA.polygon_wkt) return;
+  const coords = parseWKTPolygon(DATA.polygon_wkt);
+  if (!coords || coords.length < 3) return;
+
+  // Main field map — RGB overlay if available, else plain ortho
+  if (document.getElementById('mapOrtho')) {
+    const rgbPath = DATA._images?.rgb || null;
+    createFieldMap('mapOrtho', coords, rgbPath, 1.0);
+  }
+  // EVI map
+  if (document.getElementById('mapEvi') && DATA._images?.evi) {
+    createFieldMap('mapEvi', coords, DATA._images.evi);
+  }
+  // Zones map
+  if (document.getElementById('mapZones') && DATA._images?.zones) {
+    createFieldMap('mapZones', coords, DATA._images.zones);
+  }
+  // History map
+  if (document.getElementById('mapHistory') && DATA._images?.history) {
+    createFieldMap('mapHistory', coords, DATA._images.history);
+  }
+  // Hotspots map — always show if container exists
+  if (document.getElementById('mapHotspots')) {
+    const imagePath = DATA._images?.hotspots || null;
+    const map = createFieldMap('mapHotspots', coords, imagePath);
+
+    // Add hotspot circle markers
+    const hotspots = DATA.growth_change_analysis?.absolute_growth_change?.hotspot_scouting_points || [];
+    hotspots.forEach(h => {
+      if (!h.geometry) return;
+      const latlng = parseWKTPoint(h.geometry);
+      if (!latlng) return;
+      const col = hotspotColor(h.category);
+      const diffSign = h.value_difference > 0 ? '+' : '';
+      const label = h.category.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="position:relative;width:28px;height:36px">
+          <div style="
+            position:absolute;top:0;left:0;
+            width:28px;height:28px;
+            background:#1a3a2a;
+            border:2.5px solid white;
+            border-radius:50% 50% 50% 0;
+            transform:rotate(-45deg);
+            box-shadow:0 2px 8px rgba(0,0,0,0.6);
+          "></div>
+          <div style="
+            position:absolute;top:0;left:0;
+            width:28px;height:28px;
+            display:flex;align-items:center;justify-content:center;
+            color:white;font-family:'DM Sans',sans-serif;
+            font-size:12px;font-weight:700;
+            line-height:1;
+          ">${h.id}</div>
+        </div>`,
+        iconSize: [28, 36],
+        iconAnchor: [14, 36],
+        popupAnchor: [0, -38]
+      });
+      L.marker(latlng, { icon }).addTo(map)
+        .bindPopup(`
+          <b>#${h.id} — ${h.location}</b><br>
+          ${label}<br>
+          Area: ${h.area_ha.toFixed(2)} ha<br>
+          EVI: ${h.new_value.toFixed(3)}
+          &nbsp;<span style="color:${col};font-weight:600">(${diffSign}${h.value_difference.toFixed(3)})</span>
+        `);
+    });
+  }
+}
+
+// ── 5. WEATHER HISTORY ───────────────────────
+function renderWeatherHistory(DATA) {
+  const w = DATA.weather;
+  const gdd  = w.accumulated_growing_degree_days_since_seeding;
+  const prec = w.accumulated_precipitation_since_seeding;
+  const ps   = w.precipitation_summary;
+  const spi  = w.standardized_precipitation_index;
+
+  const gddDiff  = gdd.current  - gdd.historical_average;
+  const precDiff = prec.current - prec.historical_mean;
+  const spiColor = v => v > 1 ? 'var(--green-mid)' : v < -1 ? 'var(--red)' : 'var(--text-muted)';
+
+  return `
+  <div class="card">
+    <div class="card-title"><span class="icon">🌦️</span> Weather History</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+      <div class="w-metric">
+        <div class="wm-label">GDD since seeding</div>
+        <div class="wm-val">${fmt1(gdd.current)} °C</div>
+        <div class="wm-hist">Hist: ${fmt1(gdd.historical_average)} °C</div>
+        <div class="wm-diff ${gddDiff >= 0 ? 'diff-pos' : 'diff-neg'}">${gddDiff >= 0 ? '+' : ''}${fmt1(gddDiff)} °C</div>
+      </div>
+      <div class="w-metric">
+        <div class="wm-label">Precip. since seeding</div>
+        <div class="wm-val">${fmt1(prec.current)} mm</div>
+        <div class="wm-hist">Hist: ${fmt1(prec.historical_mean)} mm</div>
+        <div class="wm-diff ${precDiff >= 0 ? 'diff-pos' : 'diff-neg'}">${precDiff >= 0 ? '+' : ''}${fmt1(precDiff)} mm</div>
+      </div>
+      <div class="w-metric">
+        <div class="wm-label">Precipitation (recent)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px">
+          ${[['3 days',ps.last_3_days],['7 days',ps.last_7_days],['14 days',ps.last_14_days],['30 days',ps.last_30_days]].map(([l,v])=>
+            `<div>
+              <div style="font-size:0.7rem;color:var(--text-light);margin-bottom:1px">${l}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:0.95rem;font-weight:500;color:var(--text)">${fmt1(v)} <span style="font-size:0.7rem;color:var(--text-muted)">mm</span></div>
+            </div>`
+          ).join('')}
+        </div>
+      </div>
+      <div class="w-metric">
+        <div class="wm-label">SPI Index</div>
+        ${[['1 month',spi['1_month']],['3 months',spi['3_month']],['6 months',spi['6_month']]].map(([l,v],i)=>
+          `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:${i===0?'10px':'5px'}">
+            <span class="wm-hist" style="margin:0">${l}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:0.9rem;font-weight:600;color:${spiColor(v)}">${v>0?'+':''}${fmt2(v)}</span>
+          </div>`
+        ).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── 6. FIELD OPERATIONS ───────────────────────
+// Tooltip content stored in a map — avoids HTML-in-attribute escaping issues
+window._tipMap = {};
+
+// Human-readable labels for operation keys
+const OP_LABELS = {
+  seeding: 'Seeding',
+  second_nitrogen: '2nd Nitrogen',
+  plant_growth_regulation: 'PGR',
+  mid_insecticide: 'Insecticide',
+  early_fungicide: 'Fungicide',
+  herbicide: 'Herbicide',
+  first_nitrogen: '1st Nitrogen',
+  third_nitrogen: '3rd Nitrogen',
+};
+
+function opLabel(key) {
+  return OP_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function renderOperations(DATA) {
+  const ops = DATA.timing_of_field_operations;
+  const days = Object.keys(ops).sort();
+
+  // Build a date-keyed lookup from forecast data
+  const forecastByDate = {};
+  (DATA.weather?.forecast?.daily || []).forEach(f => {
+    const key = f.time.slice(0, 10); // "YYYY-MM-DD"
+    forecastByDate[key] = f;
+  });
+
+  // Collect all operation types present across all days (excluding weather_conditions)
+  const opTypes = [...new Set(
+    days.flatMap(date => Object.keys(ops[date]).filter(k => k !== 'weather_conditions'))
+  )];
+
+  // ── Weather header row ──────────────────────
+  const weatherCells = days.map((date, i) => {
+    const wc = forecastByDate[date];
+    const d = new Date(date);
+    const dateLabel = d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+
+    if (!wc) return `<div class="ops-weather-cell"><div class="wc-date">${dateLabel}</div><div class="wc-icon">—</div></div>`;
+
+    const precip = wc.precipitation_sum || 0;
+    const cloud  = wc.totalcloudcover_mean || 0;
+    const precipIcon = precip >= 5 ? '🌧️' : precip > 0 ? '🌦️' : cloud >= 0.7 ? '☁️' : cloud >= 0.4 ? '⛅' : '☀️';
+    const precipVal  = precip > 0 ? `${precip.toFixed(0)}mm` : '';
+    const tempVal    = `${Math.round(wc.temperature_min)}–${Math.round(wc.temperature_max)}°`;
+    const wind       = wc.windspeed_mean || 0;
+    const windIcon   = wind >= 5 ? '💨' : wind >= 3 ? '🌬️' : '';
+    const windVal    = `${fmt1(wind)}`;
+
+    const tipId = `wtip_${i}`;
+    window._tipMap[tipId] = `<b>${dateLabel}</b><br>` +
+      `Temp: ${tempVal}<br>` +
+      `Precip: ${precip.toFixed(1)} mm<br>` +
+      `Cloud: ${Math.round((wc.totalcloudcover_mean||0)*100)}%<br>` +
+      `Wind: ${fmt1(wind)} m/s<br>` +
+      `Soil temp: ${fmt1(wc.soiltemperature_0to10cm_mean||0)}°C<br>` +
+      `Soil moisture: ${(wc.soilmoisture_0to10cm||0).toFixed(3)}`;
+
+    return `<div class="ops-weather-cell" data-tip-id="${tipId}"
+      onmouseenter="showTipById(event,this.dataset.tipId)"
+      onmouseleave="hideTip()">
+      <div class="wc-date">${dateLabel}</div>
+      <div class="wc-icon">${precipIcon}</div>
+      <div class="wc-val">${Math.round(wc.temperature_mean)}°</div>
+      ${precipVal ? `<div class="wc-val" style="color:#4a90c4">${precipVal}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // ── Operation rows ──────────────────────────
+  const opRows = opTypes.map(opKey => {
+    const label = opLabel(opKey);
+    const dayCards = days.map((date, i) => {
+      const dayData = ops[date][opKey];
+      if (!dayData) {
+        return `<div class="ops-day ops-na"><div class="od-idx">—</div></div>`;
+      }
+      const idx = dayData.suitability_index;
+      let cls = 'ops-bad';
+      if(idx >= 0.85) cls = 'ops-good';
+      else if(idx >= 0.5) cls = 'ops-med';
+      const dateLabel = new Date(date).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      const tipId = `tip_${opKey}_${i}`;
+      window._tipMap[tipId] = `<b>${dateLabel} — ${label}</b><br>Index: ${idx}<br>` +
+        Object.entries(dayData.conditions).map(([k,v]) => {
+          const vClean = v.replace(' -> BLOCKED','');
+          const col = vClean==='good' ? '#52b788' : vClean==='medium' ? '#e9c46a' : '#f4a261';
+          const blocked = v.includes('BLOCKED') ? ' 🚫' : '';
+          return `${k.replace(/_/g,' ')}: <span style="color:${col};font-weight:600">${vClean}${blocked}</span>`;
+        }).join('<br>');
+      return `<div class="ops-day ${cls}" data-tip-id="${tipId}"
+        onmouseenter="showTipById(event,this.dataset.tipId)"
+        onmouseleave="hideTip()">
+        <div class="od-idx">${idx}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="ops-op-label">${label}</div>
+      <div class="ops-table-wrap">
+        <div class="ops-grid">${dayCards}</div>
+      </div>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <div class="card-title"><span class="icon">🗓️</span> Field Operations Suitability</div>
+    <div class="legend" style="margin-bottom:10px">
+      <div class="legend-item"><div class="legend-dot" style="background:#52b788"></div>Good (≥0.85)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e9c46a"></div>Moderate (0.5–0.84)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div>Poor (&lt;0.5)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e0dbd0"></div>Not relevant</div>
+    </div>
+    <div class="ops-table">
+      <div class="ops-op-label" style="color:var(--text-light);font-weight:400">Weather</div>
+      <div class="ops-table-wrap">
+        <div class="ops-weather-row">${weatherCells}</div>
+      </div>
+      ${opRows}
+    </div>
+    <p style="font-size:0.72rem;color:var(--text-light);margin-top:10px">Hover over a day or weather cell for details.</p>
+  </div>`;
+}
+
+// ── 7. SOIL & TERRAIN ─────────────────────────
+function renderSoil(DATA) {
+  const s = DATA.metadata.soil;
+  const t = DATA.metadata.terrain;
+  return `
+  <div class="card">
+    <details>
+      <summary>🪨 Soil &amp; Terrain Details</summary>
+      <div style="margin-top:12px">
+        <div class="section-sub">Soil Properties</div>
+        <div class="soil-grid" style="margin-bottom:14px">
+          <div class="soil-item"><div class="si-label">Soil Group (WRB)</div><div class="si-val">${s.WRB_soil_groups}</div></div>
+          <div class="soil-item"><div class="si-label">Bulk Density</div><div class="si-val">${s['bulk_density kg/dm³']} kg/dm³</div></div>
+          <div class="soil-item"><div class="si-label">Clay</div><div class="si-val">${fmt1(s['clay_particles g/100g (%)'])}%</div></div>
+          <div class="soil-item"><div class="si-label">Silt</div><div class="si-val">${fmt1(s['silt particles g/100g (%)'])}%</div></div>
+          <div class="soil-item"><div class="si-label">Sand</div><div class="si-val">${fmt1(s['sand particles g/100g (%)'])}%</div></div>
+          <div class="soil-item"><div class="si-label">CEC</div><div class="si-val">${fmt1(s['cation_exchange_capacity cmol(c)/kg'])} cmol/kg</div></div>
+        </div>
+        <div class="section-sub">Terrain</div>
+        <div class="soil-grid">
+          <div class="soil-item"><div class="si-label">Mean Elevation</div><div class="si-val">${fmt1(t.mean_elevation)} m</div></div>
+          <div class="soil-item"><div class="si-label">Elevation Range</div><div class="si-val">${fmt1(t.min_elevation)}–${fmt1(t.max_elevation)} m</div></div>
+          <div class="soil-item"><div class="si-label">Terrain Variability</div><div class="si-val">${fmt1(t.variability)}</div></div>
+        </div>
+      </div>
+    </details>
+  </div>`;
+}
+
+// ── TOOLTIP ───────────────────────────────────
+function showTip(e, html) {
+  const tip = document.getElementById('tooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  tip.style.left = (e.pageX + 12) + 'px';
+  tip.style.top  = (e.pageY - 10) + 'px';
+}
+function showTipById(e, id) {
+  showTip(e, window._tipMap[id] || '');
+}
+function hideTip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+document.addEventListener('mousemove', e => {
+  const tip = document.getElementById('tooltip');
+  if(tip.style.display === 'block') {
+    tip.style.left = (e.pageX + 12) + 'px';
+    tip.style.top  = (e.pageY - 10) + 'px';
+  }
+});
+
+// ── CHART INIT (must run after innerHTML is set) ──
+function initCharts() {
+  const cd = window._chartData;
+  const charts = [];
+
+  // Absolute growth change bar
+  if (document.getElementById('absChangeChart')) {
+    charts.push(new Chart(document.getElementById('absChangeChart'), {
+      type: 'bar',
+      data: {
+        labels: cd.absChangeLabels,
+        datasets: [{
+          data: cd.absChangeVals,
+          backgroundColor: cd.absChangeCols,
+          borderRadius: 4,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#9e9488' } },
+          y: { grid: { color: '#e8e4dc' }, ticks: { font: { size: 9 }, color: '#9e9488' },
+               title: { display: true, text: '%', font: { size: 9 }, color: '#9e9488' } }
+        }
+      }
+    }));
+  }
+
+  // Vegetation category bar
+  charts.push(new Chart(document.getElementById('vegCatChart'), {
+    type: 'bar',
+    data: {
+      labels: cd.catLabels,
+      datasets: [{ data: cd.catVals, backgroundColor: cd.catColors, borderRadius: 4, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9e9488' } },
+        y: { grid: { color: '#e8e4dc' }, ticks: { font: { size: 10 }, color: '#9e9488' },
+             title: { display: true, text: 'ha', font: { size: 10 }, color: '#9e9488' } }
+      }
+    }
+  }));
+
+  // EVI time series — range band (min/max shaded) + median line
+  charts.push(new Chart(document.getElementById('eviChart'), {
+    type: 'line',
+    data: {
+      labels: cd.eviDates,
+      datasets: [
+        {
+          // Max boundary (top of band) — invisible line, fill down to next dataset
+          label: 'Max',
+          data: cd.eviMaxs,
+          borderColor: 'transparent',
+          backgroundColor: 'rgba(82,183,136,0.18)',
+          pointRadius: 0,
+          tension: 0.4,
+          fill: '+1'   // fill down to the Min dataset
+        },
+        {
+          // Min boundary (bottom of band)
+          label: 'Min',
+          data: cd.eviMins,
+          borderColor: 'transparent',
+          backgroundColor: 'rgba(82,183,136,0.18)',
+          pointRadius: 0,
+          tension: 0.4,
+          fill: false
+        },
+        {
+          // Median — solid prominent line
+          label: 'Median',
+          data: cd.eviMedians,
+          borderColor: '#2d6a4f',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#2d6a4f',
+          tension: 0.4,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            font: { size: 10 }, color: '#6b6458', boxWidth: 12,
+            filter: item => item.text !== 'Max' && item.text !== 'Min'
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9e9488' } },
+        y: { grid: { color: '#e8e4dc' }, ticks: { font: { size: 10 }, color: '#9e9488' }, min: 0 }
+      }
+    }
+  }));
+
+  return charts;
+}
+
+
+// ── INIT — data loaded from data.js (window.FIELD_DATA) ──
+let _activeCharts = [];
+
+function destroyCharts() {
+  _activeCharts.forEach(c => { try { c.destroy(); } catch(e){} });
+  _activeCharts = [];
+}
+
+function init() {
+  const DATA = window.FIELD_DATA;
+  if (!DATA) {
+    document.getElementById('app').innerHTML = `<div style="padding:60px;text-align:center;color:#c0392b;font-family:'DM Sans',sans-serif">
+      <b>Could not load data.js</b><br>
+      <small>Make sure data.js exists in the same folder as this index.html</small>
+    </div>`;
+    return;
+  }
+
+  window._chartData = {};
+  window._tipMap = {};
+  destroyCharts();
+
+  document.title = `Field Report — ${DATA.annotation_id}`;
+
+  document.getElementById('app').innerHTML = `
+    ${renderHeader(DATA)}
+    <div class="main">
+      <div class="col-left">
+        ${renderLLMSummary()}
+        ${renderFieldMap(DATA)}
+        ${renderTimeline(DATA)}
+        ${renderWeatherHistory(DATA)}
+        ${renderOperations(DATA)}
+        ${renderVariability(DATA)}
+        ${renderVegetation(DATA)}
+        ${renderSoil(DATA)}
+      </div>
+    </div>
+  `;
+  _activeCharts = initCharts();
+  initMap(DATA);
+}
+
+init();
+
+
+</script>
+</body>
+</html>

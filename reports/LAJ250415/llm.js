@@ -1,18 +1,26 @@
-// LLM Summary — edit the text below to update the summary shown on all field reports.
-// To update: edit the markdown text between the backticks and save.
+// Field LLM summary — auto-generated from LLM output.
+// To update: re-run txt_to_llm_js.py with a new txt file.
 window.LLM_SUMMARY = `
-
 ## FINAL_SUMMARY
-- **Crop Stage**: Winter wheat at **beginning of stem elongation (BBCH 31)**—prioritize nitrogen, PGRs, and preventive sprays.
-- **Critical Operations**:
-  - **Second nitrogen application**: Apply **April 12–14** (dry, light rain forecasted). Reduce rates by **15–20%** in low-productivity zones; increase by **10–15%** in high-productivity zones.
-  - **Plant growth regulator (PGR)**: Apply **April 12–13** (overcast, calm). Reduce rates by **20–25%** in weak zones; increase by **10–20%** in vigorous zones.
-  - **Preventive fungicide/herbicide**: Apply **April 12–13** (calm, dry). Use **uniform rates** across the field.
-- **Weather Risks**: Mild temperatures and recent rain favor fungal diseases/weeds. **Avoid April 15 and 22–25** (heavy rain risks leaching).
-- **Growth Variability**: **25% of the field is underperforming** (very low/low productivity); **18% is overperforming** (high/very high). Adjust inputs accordingly.
-- **Growth Trend**: Rapid, uniform growth expected, but **scout low/high zones within 3–5 days** to confirm trends (last satellite image is **10 days old**).
-- **Hotspots**: None detected, but **inspect low-productivity areas** for compaction/pests and **monitor high-productivity areas** for lodging.
-- **Regulatory Note**: Ensure nitrogen rates comply with Czechia’s Nitrate Directive.
-- **Disclaimer**: Satellite data is **outdated (April 15)**—field conditions may have changed. **Scouting is critical** before finalizing rates.
-- **Key Action**: **Act this week (April 12–14)** to capitalize on ideal weather; delay risks reduced efficacy or crop stress.
+
+- **Growth stage:** The crop is at the start of stem elongation (BBCH 31), entering a phase of high nitrogen demand.
+
+- **Field operations:**
+  - **Second nitrogen application:** Apply within the next 3 days (by April 17) to capitalize on light rain for incorporation. Avoid heavy rain forecasted for April 25.
+  - **Early fungicide:** Apply by April 20 on low-wind, dry days to protect against stem-base and foliar diseases.
+  - **Post-emergence herbicide:** Apply by April 20 if weeds are present, avoiding windy conditions.
+  - **Plant growth regulator (PGR):** Apply by April 20 to reduce lodging risk, especially in vigorous areas.
+
+- **Growth trend:** The crop shows uniform growth with minor biomass increases. Two hotspots (northeast and central) exhibit extreme growth—scout these areas for potential issues like weeds or soil anomalies.
+
+- **Growth variability:** About a quarter of the field is underperforming, while a smaller portion is above-average. This variability is typical for this stage and not yet concerning.
+
+- **Variable rate strategy:**
+  - **Nitrogen:** Increase rates by 10–15% in high-productivity zones; reduce by 10–30% in low-productivity zones.
+  - **PGR:** Increase rates by 10–25% in high-productivity zones (higher lodging risk); reduce by 10–30% in low-productivity zones.
+
+- **Other insights:**
+  - The latest satellite data (April 15) is current and reliable for decision-making.
+  - Heavy rain on April 25 may disrupt operations—complete high-priority tasks before this date.
+  - Check local regulations for input limits (e.g., nitrogen application rates).
 `;
