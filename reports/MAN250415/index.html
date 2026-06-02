@@ -561,6 +561,31 @@
   }
   details summary:hover { color: var(--green-mid); }
 
+  /* ── EVI LEGEND ── */
+  .evi-legend {
+    width: 36px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+  }
+  .evi-legend-bar {
+    flex: 1;
+    width: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    margin: 4px 0;
+  }
+  .evi-legend-label {
+    text-align: center;
+    line-height: 1.2;
+  }
+
   /* ── FIELD MAP (Leaflet) ── */
   .field-leaflet-wrap {
     border-radius: 10px;
@@ -1172,7 +1197,10 @@ function renderFieldMap(DATA) {
       ${hasEvi ? `
       <div class="dual-map-item">
         <div class="card-title" style="margin-bottom:10px"><span class="icon">🌿</span> EVI <span style="color:var(--amber-dark);font-size:0.9em">${eviDate}</span></div>
-        <div class="field-leaflet-wrap" id="mapEvi"></div>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <div class="field-leaflet-wrap" id="mapEvi" style="flex:1"></div>
+          <div id="eviLegend" class="evi-legend"></div>
+        </div>
       </div>` : ''}
     </div>
   </div>`;
@@ -1198,6 +1226,22 @@ function hotspotColor(category) {
   return '#aaaaaa';
 }
 
+// EVI colormap stops matching the DynaCrop palette (classes 1-5)
+const EVI_STOPS = ['#FFE9A6','#B1C867','#519037','#165923','#042117'];
+
+function addEviLegend(vmin, vmax) {
+  const el = document.getElementById('eviLegend');
+  if (!el) return;
+
+  const gradient = `linear-gradient(to bottom, ${EVI_STOPS.slice().reverse().join(',')})`;
+  const mid = ((vmin + vmax) / 2).toFixed(2);
+
+  el.innerHTML = `
+    <div class="evi-legend-label">${vmax.toFixed(2)}</div>
+    <div class="evi-legend-bar" style="background:${gradient}"></div>
+    <div class="evi-legend-label">${vmin.toFixed(2)}</div>`;
+}
+
 function initMap(DATA) {
   if (!DATA.polygon_wkt) return;
   const coords = parseWKTPolygon(DATA.polygon_wkt);
@@ -1211,6 +1255,10 @@ function initMap(DATA) {
   // EVI map
   if (document.getElementById('mapEvi') && DATA._images?.evi) {
     createFieldMap('mapEvi', coords, DATA._images.evi);
+    addEviLegend(
+      DATA._images.evi_vmin ?? 0.2,
+      DATA._images.evi_vmax ?? 0.9
+    );
   }
   // Zones map
   if (document.getElementById('mapZones') && DATA._images?.zones) {
