@@ -805,10 +805,12 @@ function renderHeader(DATA) {
   </header>
   <nav class="field-nav">
     <a class="field-btn" href="../../index.html" style="opacity:0.5;font-size:0.75rem;letter-spacing:0.03em">← All</a>
-    ${(window.FIELD_MANIFEST || []).map(folder => {
+    ${/* TEMPORARILY DISABLED — remove comment markers to restore field links
+    (window.FIELD_MANIFEST || []).map(folder => {
       const isActive = folder === DATA.annotation_id;
       return `<a class="field-btn ${isActive ? 'active' : ''}" href="../${folder}/index.html">${folder}</a>`;
-    }).join('')}
+    }).join('')
+    */ ''}
   </nav>`;
 }
 
